@@ -125,7 +125,36 @@ Coming soon
 Coming soon
 
 ## NVCC Wrapper
-Coming soon
+Kokkos is a C++ project, but often builds for the CUDA backend. This is particularly problematic with CMake. At this point, `nvcc` does not accept all the flags that normally get passed to a C++ compiler.  Kokkos provides `nvcc_wrapper` that identifies correctly as a C++ compiler to CMake and accepts C++ flags, but uses `nvcc` as the underlying compiler.
+
+Adding `nvcc_wrapper` as a valid compiler in the Spack toolchain requires a few steps, but is straightforward.
+First, you must install the Spack package using the correct underlying compiler. In this example we use GCC 7.2.
+````
+spack install kokkos-nvcc-wrapper %gcc@7.2.0
+````
+After installing, locate the path to the compiler by running:
+````
+spack find -p kokkos-nvcc-wrapper %gcc@7.2.0
+````
+Spack maintains a list of valid compilers in its `compilers.yaml` file, usually found at `$HOME/.spack`.
+There should already exist an entry in this file for the compiler (e.g. GCC 7.2) you used to build `nvcc_wrapper`.
+Copy this entry and modify slightly, changing the compiler name (e.g. `gcc@7.2.0-kokkos`) and the C++ compiler path:
+````
+- compiler:
+    modules: [gcc/7.2.0]
+    operating_system: rhel7
+    paths:
+      cc: /opt/local/bin/gcc
+      f77: /opt/local/bin/gfortran
+      fc: /opt/local/bin/gfortran
+      cxx: /projects/linux-rhel7-ppc64le/gcc-7.2.0/kokkos-nvcc-wrapper-master-skz642na6cvjxl2hhunauewk6haqyu5u/bin/nvcc_wrapper
+    spec: gcc@7.2.0-kokkos
+    target: ppc64le
+````
+You can now build Kokkos (and Kokkos-dependent projects) using this compiler with the CUDA backend, e.g.
+````
+spack install kokkos +cuda %gcc@7.2.0-kokkos
+````
 
 
 
