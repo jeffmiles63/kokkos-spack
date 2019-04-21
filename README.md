@@ -115,15 +115,6 @@ Virtual Packages:
     None
 ````
 
-## Common Kokkos Examples
-Coming soon
-
-## Setting Up Kokkos Tutorials
-Coming soon
-
-## Kokkos Kernels (and other dependent projects)
-Coming soon
-
 ## NVCC Wrapper
 Kokkos is a C++ project, but often builds for the CUDA backend. This is particularly problematic with CMake. At this point, `nvcc` does not accept all the flags that normally get passed to a C++ compiler.  Kokkos provides `nvcc_wrapper` that identifies correctly as a C++ compiler to CMake and accepts C++ flags, but uses `nvcc` as the underlying compiler.
 
@@ -155,6 +146,30 @@ You can now build Kokkos (and Kokkos-dependent projects) using this compiler wit
 ````
 spack install kokkos +cuda %gcc@7.2.0-kokkos
 ````
+
+## Common Kokkos Examples
+Kokkos backends are Spack variants, specified with the `+` syntax. Most of these variants are listed above in the `spack info` output.  Spack will choose a default compiler, if none is specified using the `%` syntax. For Kokkos, best practice is to always choose a specific compiler for Kokkos.
+````
+spack insall kokkos +cuda +serial kokkos_arch=Volta70 %gcc@7.2.0-kokkos
+````
+The given spec builds the CUDA backend with serial support, using an installed `nvcc_wrapper` as the underlying compiler. In this case, Kokkos should optimize for the Volta 7.0 architecture. Another possibility is
+````
+spack install kokoks +openmp kokkos_arch=HSW %intel@18
+````
+which builds the OpenMP backend, optimized for Haswell using an Intel 18 compiler. 
+
+Spack variants not only specify backends, but can activate certain features. The most common are explicit template instantation (`+eti`) and the Kokkos profiling tools (`+profiling`).
+````
+spack install kokkos +openmp +profiling +eti kokkos_arch=HSW  %intel@18
+````
+
+## Setting Up Kokkos Tutorials
+Coming soon
+
+## Kokkos Kernels (and other dependent projects)
+Coming soon
+
+
 
 
 
