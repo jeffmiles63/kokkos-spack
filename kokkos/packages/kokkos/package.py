@@ -11,24 +11,23 @@ class Kokkos(CMakePackage):
     portable applications targeting all major HPC platforms."""
 
     homepage = "https://github.com/kokkos/kokkos"
-    url      = "https://github.com/kokkos/kokkos/archive/2.03.00.tar.gz"
+    url      = "https://github.com/kokkos/kokkos/archive/2.8.00.tar.gz"
     git      = "https://github.com/kokkos/kokkos.git"
 
     version('develop', branch='develop')
     version('master', branch='master')
     version('cmake', branch='cmake-overhaul')
-    version('2.7.00',  'b357f9374c1008754babb4495f95e392')
+    version('2.8.00')
 
     
     variant('serial', default=True, description="enable Serial backend (default)")
     nondefault_backends = {
-      'serial'    : "enable Serial backend (default)",
-      'qthreads'  : "enable Qthreads backend",
-      'cuda'      : "enable Cuda backend",
-      'openmp'    : "enable OpenMP backend",
+      'Serial'    : "enable Serial backend (default)",
+      'CUDA'      : "enable Cuda backend",
+      'OpenMP'    : "enable OpenMP backend",
     }
     for backend in nondefault_backends:
-      variant(backend, default=False, description=nondefault_backends[backend])
+      variant(backend.lower(), default=False, description=nondefault_backends[backend])
     backends = nondefault_backends.keys() + ["serial"]
 
     universal_variants = {
@@ -55,7 +54,7 @@ class Kokkos(CMakePackage):
     # Architecture to optimize for
     variant(
         'kokkos_arch',
-        default='none',
+        default='None',
         values=arch_values,
         description='Set the architecture to optimize for'
     )
@@ -81,19 +80,18 @@ class Kokkos(CMakePackage):
 
     # Specify that v1.x is required as v2.x has API changes
     depends_on('hwloc', when="+hwloc")
-    depends_on('qthreads', when='+qthreads')
     depends_on('cuda', when='+cuda')
 
     def append_enables(self, options, enable_list, prefix="", upper=True):
       for enabled in enable_list:
         var = enabled
-	enableStr = "+%s" % var
-	if enableStr in self.spec:
-	  if prefix:
-	    var = prefix + var
-	  if upper:
-	    var = var.upper()
-	  options.append("-DKOKKOS_ENABLE_%s=ON" % var)
+        enableStr = "+%s" % var.lower()
+        if enableStr in self.spec:
+          if prefix:
+            var = prefix + var
+          if upper:
+            var = var.upper()
+          options.append("-DKOKKOS_ENABLE_%s=ON" % var)
         
   
     def cmake_args(self):
@@ -103,7 +101,7 @@ class Kokkos(CMakePackage):
       if spec.variants["kokkos_arch"].value:
         options.append("-DKOKKOS_ARCH=%s" % spec.variants["kokkos_arch"].value)
 
-      for tpl in "hwloc", "qthreads":
+      for tpl in "hwloc":
         specStr = "+%s" % tpl
         if specStr in spec:
           options.append("-DKOKKOS_ENABLE_%s=ON" % tpl.upper())
@@ -111,7 +109,12 @@ class Kokkos(CMakePackage):
 
       self.append_enables(options, self.universal_variants)
       self.append_enables(options, self.cuda_variants, "Cuda_", upper=False)
-      self.append_enables(options, self.backends)
+      self.append_enables(options, self.backends, upper=True)
+
+      #special cases
+      #deprecated code gets enabled by default internally in the cmake - shut it off in spack
+      if not "+deprecated_code" in self.spec:
+        options.append("-DKOKKOS_ENABLE_DEPRECATED_CODE=OFF")
 
       return options
 

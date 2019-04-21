@@ -39,11 +39,11 @@ Tags:
     None
 
 Preferred version:  
-    2.7.00     https://github.com/kokkos/kokkos/archive/2.7.00.tar.gz
+    2.8.00     https://github.com/kokkos/kokkos/archive/2.8.00.tar.gz
 
 Safe versions:  
     develop    [git] https://github.com/kokkos/kokkos.git
-    2.7.00     https://github.com/kokkos/kokkos/archive/2.7.00.tar.gz
+    2.8.00     https://github.com/kokkos/kokkos/archive/2.8.00.tar.gz
     master     [git] https://github.com/kokkos/kokkos.git
     cmake      [git] https://github.com/kokkos/kokkos.git
 
@@ -70,7 +70,7 @@ Variants:
     deprecated_code [off]             True, False             activates old, deprecated code
                                                               (please don't use)
     eti [off]                         True, False             set enable_eti Kokkos option
-    kokkos_arch []                    Kepler30, Kepler32,     Set the architecture to
+    kokkos_arch [None]                Kepler30, Kepler32,     Set the architecture to
                                       Kepler35, Kepler37,     optimize for
                                       Maxwell50,              
                                       Maxwell52,              
@@ -90,7 +90,6 @@ Variants:
                                                               profiling tools
     profiling_load_print [off]        True, False             set enable_profile_load_print
                                                               Kokkos option
-    qthreads [off]                    True, False             enable Qthreads backend
     serial [off]                      True, False             enable Serial backend
                                                               (default)
 
@@ -101,18 +100,84 @@ Build Dependencies:
     cmake
     cuda
     hwloc
-    qthreads
 
 Link Dependencies:
     cuda
     hwloc
-    qthreads
+````
 
-Run Dependencies:
-    None
-
-Virtual Packages: 
-    None
+## Setting Up Spack: Avoiding the Package Cascade
+By default, Spack doesn't 'see' anything on your system - including things like CMake and CUDA.
+At minimum, we recommend adding a `packages.yaml` to your `$HOME.spack` folder that includes CMake (and CUDA, if applicable).  For example, your `packages.yaml` file could be:
+````
+packages:
+ cuda:
+  modules:
+   cuda@9.2.88: [cuda/9.2.88]
+  paths:
+   cuda@9.2.88:
+    /opt/local/ppc64le-pwr8-nvidia/cuda/9.2.88
+  buildable: false
+ cmake:
+  modules:
+   cmake: [cmake]
+  paths:
+   cmake:
+    /opt/local/ppc64le/cmake/3.9.6
+  buildable: false
+````
+The `modules` entry is only necessary on systems that require loading Modules (i.e. most DOE systems).
+The `buildable` flag is useful to make sure Spack crashes if there is a path error, 
+rather than having a type-o and Spack rebuilding everything because `cmake` isn't found.
+You can verify your environment is set up correctly by running `spack graph`. 
+For example:
+````
+spack graph kokkos +cuda
+o  kokkos
+|\
+o |  cuda
+ /
+o  cmake
+````
+Without the existing CUDA and CMake being identified in `packages.yaml`, a (subset!) of the output would be:
+````
+o  kokkos
+|\
+| o  cmake
+| |\
+| | | |\
+| | | | | |\
+| | | | | | | |\
+| | | | | | | | | |\
+| | | | | | | o | | |  libarchive
+| | | | | | | |\ \ \ \
+| | | | | | | | | |\ \ \ \
+| | | | | | | | | | | | |_|/
+| | | | | | | | | | | |/| |
+| | | | | | | | | | | | | o  curl
+| | |_|_|_|_|_|_|_|_|_|_|/|
+| |/| | | |_|_|_|_|_|_|_|/
+| | | | |/| | | | | | | |
+| | | | o | | | | | | | |  openssl
+| |/| | | | | | | | | | |
+| | | | | | | | | | o | |  libxml2
+| | |_|_|_|_|_|_|_|/| | |
+| | | | | | | | | | |\ \ \
+| o | | | | | | | | | | | |  zlib
+|  / / / / / / / / / / / /
+| o | | | | | | | | | | |  xz
+|  / / / / / / / / / / /
+| o | | | | | | | | | |  rhash
+|  / / / / / / / / / /
+| | | | o | | | | | |  nettle
+| | | | |\ \ \ \ \ \ \
+| | | o | | | | | | | |  libuv
+| | | | o | | | | | | |  autoconf
+| | |_|/| | | | | | | |
+| | | | |/ / / / / / /
+| o | | | | | | | | |  perl
+| o | | | | | | | | |  gdbm
+| o | | | | | | | | |  readline
 ````
 
 ## NVCC Wrapper
@@ -168,6 +233,7 @@ Coming soon
 
 ## Kokkos Kernels (and other dependent projects)
 Coming soon
+
 
 
 
