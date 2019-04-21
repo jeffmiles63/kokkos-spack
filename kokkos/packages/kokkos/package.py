@@ -55,7 +55,7 @@ class Kokkos(CMakePackage):
     # Architecture to optimize for
     variant(
         'kokkos_arch',
-        default=None,
+        default='none',
         values=arch_values,
         description='Set the architecture to optimize for'
     )
@@ -79,30 +79,21 @@ class Kokkos(CMakePackage):
     for opt in cuda_variants:
       conflicts('+%s' % opt, when="~cuda", msg="Must enable CUDA to use %s" % opt)
 
-    # Check that we haven't asked for a GPU architecture that
-    # the revision of kokkos does not support
-    conflicts('arch=Volta70', when='@:2.5.99')
-    conflicts('arch=Volta72', when='@:2.5.99')
-
-    # conflicts on kokkos version and cuda enabled
-    # see kokkos issue #1296
-    # https://github.com/kokkos/kokkos/issues/1296
-    conflicts('+cuda', when='@2.5.00:develop',
-        msg='Kokkos build system has issue when CUDA enabled'
-        ' in version 2.5.00 through 2.7.00, and develop until '
-        'issue #1296 is resolved.')
-
     # Specify that v1.x is required as v2.x has API changes
     depends_on('hwloc', when="+hwloc")
     depends_on('qthreads', when='+qthreads')
     depends_on('cuda', when='+cuda')
 
-    def append_enables(self, options, enable_list, prefix=""):
+    def append_enables(self, options, enable_list, prefix="", upper=True):
       for enabled in enable_list:
         var = enabled
-        if prefix:
-          var = prefix + var
-        options.append("-DKOKKOS_ENABLE_%s=ON" % var)
+	enableStr = "+%s" % var
+	if enableStr in self.spec:
+	  if prefix:
+	    var = prefix + var
+	  if upper:
+	    var = var.upper()
+	  options.append("-DKOKKOS_ENABLE_%s=ON" % var)
         
   
     def cmake_args(self):
@@ -116,10 +107,10 @@ class Kokkos(CMakePackage):
         specStr = "+%s" % tpl
         if specStr in spec:
           options.append("-DKOKKOS_ENABLE_%s=ON" % tpl.upper())
-          options.append("-D%s_DIR=%s" % (tpl, specs[tpl].prefix))
+          options.append("-D%s_DIR=%s" % (tpl, spec[tpl].prefix))
 
       self.append_enables(options, self.universal_variants)
-      self.append_enables(options, self.cuda_variants, "Cuda_")
+      self.append_enables(options, self.cuda_variants, "Cuda_", upper=False)
       self.append_enables(options, self.backends)
 
       return options
