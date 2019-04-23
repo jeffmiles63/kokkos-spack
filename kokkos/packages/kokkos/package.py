@@ -14,21 +14,16 @@ class Kokkos(CMakePackage):
     url      = "https://github.com/kokkos/kokkos/archive/2.8.00.tar.gz"
     git      = "https://github.com/kokkos/kokkos.git"
 
-    version('develop', branch='develop')
-    version('master', branch='master')
     version('cmake', branch='cmake-overhaul')
-    version('2.8.00')
-
     
-    variant('serial', default=True, description="enable Serial backend (default)")
-    nondefault_backends = {
-      'Serial'    : "enable Serial backend (default)",
-      'CUDA'      : "enable Cuda backend",
-      'OpenMP'    : "enable OpenMP backend",
+    backends = {
+      'Serial'    : (True,  "enable Serial backend (default)"),
+      'CUDA'      : (False, "enable Cuda backend"),
+      'OpenMP'    : (False, "enable OpenMP backend"),
     }
-    for backend in nondefault_backends:
-      variant(backend.lower(), default=False, description=nondefault_backends[backend])
-    backends = nondefault_backends.keys() + ["serial"]
+    for backend in backends:
+      deflt, descr = backends[backend]
+      variant(backend.lower(), default=deflt, description=backends[backend])
 
     universal_variants = {
       'PIC'                           : "enable position independent code (-fPIC flag)",
@@ -101,11 +96,14 @@ class Kokkos(CMakePackage):
       if spec.variants["kokkos_arch"].value:
         options.append("-DKOKKOS_ARCH=%s" % spec.variants["kokkos_arch"].value)
 
-      for tpl in "hwloc":
+      for tpl in "hwloc",:
         specStr = "+%s" % tpl
         if specStr in spec:
           options.append("-DKOKKOS_ENABLE_%s=ON" % tpl.upper())
           options.append("-D%s_DIR=%s" % (tpl, spec[tpl].prefix))
+
+      if self.run_tests:
+        options.append("-DKokkos_ENABLE_TESTS=ON")
 
       self.append_enables(options, self.universal_variants)
       self.append_enables(options, self.cuda_variants, "Cuda_", upper=False)

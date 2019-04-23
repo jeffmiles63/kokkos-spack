@@ -27,25 +27,9 @@ spack info kokkos
 This will print all the information about how to install Kokkos with Spack.
 For detailed instructions on how to use Spack, see the [Owner's Manual](https://spack.readthedocs.io).
 ````
-CMakePackage:   kokkos
-
 Description:
     Kokkos implements a programming model in C++ for writing performance
     portable applications targeting all major HPC platforms.
-
-Homepage: https://github.com/kokkos/kokkos
-
-Tags: 
-    None
-
-Preferred version:  
-    2.8.00     https://github.com/kokkos/kokkos/archive/2.8.00.tar.gz
-
-Safe versions:  
-    develop    [git] https://github.com/kokkos/kokkos.git
-    2.8.00     https://github.com/kokkos/kokkos/archive/2.8.00.tar.gz
-    master     [git] https://github.com/kokkos/kokkos.git
-    cmake      [git] https://github.com/kokkos/kokkos.git
 
 Variants:
     Name [Default]                    Allowed values          Description
@@ -92,10 +76,6 @@ Variants:
                                                               Kokkos option
     serial [off]                      True, False             enable Serial backend
                                                               (default)
-
-Installation Phases:
-    cmake    build    install
-
 Build Dependencies:
     cmake
     cuda
@@ -232,9 +212,60 @@ spack install kokkos +openmp +profiling +eti kokkos_arch=HSW  %intel@18
 Coming soon
 
 ## Kokkos Kernels (and other dependent projects)
-Coming soon
+Kokkos Kernels also defines a package that can be installed as, e.g.
+````
+spack install kokkos-kernels +serial +float
+````
+Here the main variants of Kokkos Kernels are the backend (e.g. serial, cuda, openmp) or the ETI types to be explicitly instantiated (e.g. float, double, complex_double). Running `spack info kokkos-kernels` gives, e.g.
+````
+Description:
+    Kokkos Kernels provides math kernels, often BLAS or LAPACK for small
+    matrices, that can be used in larger Kokkos parallel routines
+
+Variants:
+    Name [Default]                 Allowed values          Description
 
 
+    build_type [RelWithDebInfo]    Debug, Release,         CMake build type
+                                   RelWithDebInfo,
+                                   MinSizeRel
+    complex_double [off]           True, False             ETI complex double precision
+    complex_float [off]            True, False             ETI complex single precision
+    cuda [off]                     True, False             enable Cuda backend
+    double [on]                    True, False             ETI doubles
+    float [off]                    True, False             ETI float
+    openmp [off]                   True, False             enable OpenMP backend
+    serial [on]                    True, False             enable Serial backend
+
+Build Dependencies:
+    cmake  kokkos
+````
+Not that Kokkos is a build dependency for Kokkos-Kernels.
+Spack automatically builds a (or finds an existing) version of Kokkos that meets requirements for Kokkos Kernels.
+A few of the variants (backends like OpenMP) will change how Kokkos is built.
+However, Kokkos Kernels selects a 'default' Kokkos configuration it thinks is best.
+Kokkos Kernels variants therefore change Kokkos in a *coarse-grained* way.
+For *fine-grained* control over the dependent Kokkos, Spack allows directly specifying the exact Kokkos 
+dependency specififcation
+````
+spack install kokkos-kernels +cuda ^kokkos+cuda+uvm+cuda_lambda
+````
+Kokkos Kernels will no longer select a 'default', instead building and linking against the exact Kokkos specified.
+
+
+
+## Use with Testing
+A Spack 'spec' provides a convenient way to define testing configurations for a CI infrastructure like Jenkins.
+A spec such as:
+````
+kokkos-kernels@develop +float +double +cuda ^kokkos+uvm
+````
+defines a particular build of Kokkos Kernels that you want checked consistently on the develop branch.
+By default, testing is not activated. To have Spack both build and test a given spec, run:
+````
+spack install --test=root kokkos-kernels
+````
+Here `--test=root` says to run tests on the 'root' package (not the dependent packages), which in this case is Kokkos Kernels.
 
 
 
