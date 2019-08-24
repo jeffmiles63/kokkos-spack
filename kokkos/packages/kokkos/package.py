@@ -16,103 +16,144 @@ class Kokkos(CMakePackage):
 
     version('cmake', branch='cmake-overhaul')
     
-    backends = {
-      'Serial'    : (True,  "enable Serial backend (default)"),
-      'CUDA'      : (False, "enable Cuda backend"),
-      'OpenMP'    : (False, "enable OpenMP backend"),
-    }
-    for backend in backends:
-      deflt, descr = backends[backend]
-      variant(backend.lower(), default=deflt, description=backends[backend])
-
-    universal_variants = {
-      'PIC'                           : "enable position independent code (-fPIC flag)",
-      'Aggressive_Vectorization'      : "set aggressive_vectorization Kokkos option",
-      'Profiling'                     : "activate binding for Kokkos profiling tools",
-      'Profiling_Load_Print'          : "set enable_profile_load_print Kokkos option",
-      'Compiler_Warnings'             : "turn on verbose compiler_warnings",
-      'Deprecated_Code'               : "activates old, deprecated code (please don't use)",
-      'ETI'                           : "set enable_eti Kokkos option",
+    devices_variants = {
+     'cuda'                           : [False, 'Whether to build CUDA backend'],
+     'openmp'                         : [ True, 'Whether to build OpenMP backend'],
+     'pthread'                        : [False, 'Whether to build Pthread backend'],
+     'rocm'                           : [False, 'Whether to build AMD ROCm backend'],
+     'serial'                         : [ True, 'Whether to build serial backend'],
     }
 
-    for var in universal_variants:
-      variant(var.lower(), default=False, description=universal_variants[var])
+    tpls_variants = {
+      'hpx'                            : [False, 'Whether to enable the HPX library'],
+      'hwloc'                          : [False, 'Whether to enable the HWLOC library'],
+      'libnuma'                        : [False, 'Whether to enable the LIBNUMA library'],
+      'memkind'                        : [False, 'Whether to enable the MEMKIND library'],
+    }
 
-    gpu_values = ('Kepler30', 'Kepler32', 'Kepler35', 'Kepler37',
-                  'Maxwell50', 'Maxwell52', 'Maxwell53',
-                  'Pascal60', 'Pascal61',
-                  'Volta70', 'Volta72')
-    host_values =  ('AMDAVX', 'ARMv80', 'ARMv81', 'ARMv8-ThunderX',
-                  'Power7', 'Power8', 'Power9',
-                  'WSM', 'SNB', 'HSW', 'BDW', 'SKX', 'KNC', 'KNL')
-    arch_values = gpu_values + host_values
-    # Architecture to optimize for
+    options_variants = {
+     'aggressive_vectorization'       : [False, 'Whether to aggressively vectorize loops'],
+     'compiler_warnings'              : [False, 'Whether to print all compiler warnings'],
+     'cuda_lambda'                    : [False, 'Whether to activate experimental laambda features'],
+     'cuda_ldg_intrinsic'             : [False, 'Whether to use CUDA LDG intrinsics'],
+     'cuda_relocatable_device_code'   : [False, 'Whether to enable relocatable device code (RDC) for CUDA'],
+     'cuda_uvm'                       : [False, 'Whether to enable unified virtual memory (UVM) for CUDA'],
+     'debug'                          : [False, 'Whether to activate extra debug features - may increase compiletimes'],
+     'debug_bounds_check'             : [False, 'Whether to use bounds checking - will increase runtime'],
+     'debug_dualview_modify_check'    : [False, 'Debug check on dual views'],
+     'deprecated_code'                : [False, 'Whether to enable deprecated code'],
+     'examples'                       : [False, 'Whether to build OpenMP  backend'],
+     'explicit_instantiation'         : [False, 'Whether to explicitly instantiate certain types to lower futurecompile times'],
+     'hpx_async_dispatch'             : [False, 'Whether HPX supports asynchronous dispath'],
+     'profiling'                      : [ True, 'Whether to create bindings for profiling tools'],
+     'profiling_load_print'           : [False, 'Whether to print information about which profiling tools gotloaded'],
+     'qthread'                        : [False, 'Whether to enable the QTHREAD library'],
+     'tests'                          : [False, 'Whether to build for tests'],
+    }
+
+    cuda_arches = ["kepler" "maxwell", "pascal", "volta", "turing"]
+
+    arch_variants = {
+     'amdavx'                         : [False, 'Whether to optimize for the AMDAVX architecture'],
+     'armv80'                         : [False, 'Whether to optimize for the ARMV80 architecture'],
+     'armv81'                         : [False, 'Whether to optimize for the ARMV81 architecture'],
+     'armv8_thunderx'                 : [False, 'Whether to optimize for the ARMV8_THUNDERX architecture'],
+     'armv8_tx2'                      : [False, 'Whether to optimize for the ARMV8_TX2 architecture'],
+     'bdw'                            : [False, 'Whether to optimize for the BDW architecture'],
+     'bgq'                            : [False, 'Whether to optimize for the BGQ architecture'],
+     'carrizo'                        : [False, 'Whether to optimize for the CARRIZO architecture'],
+     'epyc'                           : [False, 'Whether to optimize for the EPYC architecture'],
+     'fiji'                           : [False, 'Whether to optimize for the FIJI architecture'],
+     'gfx901'                         : [False, 'Whether to optimize for the GFX901 architecture'],
+     'hsw'                            : [ True, 'optimize for architecture HSW'],
+     'kaveri'                         : [False, 'Whether to optimize for the KAVERI architecture'],
+     'kepler'                         : [False, 'Whether to optimize for the KEPLER architecture'],
+     'kepler30'                       : [False, 'Whether to optimize for the KEPLER30 architecture'],
+     'kepler32'                       : [False, 'Whether to optimize for the KEPLER32 architecture'],
+     'kepler35'                       : [False, 'Whether to optimize for the KEPLER35 architecture'],
+     'kepler37'                       : [False, 'Whether to optimize for the KEPLER37 architecture'],
+     'knc'                            : [False, 'Whether to optimize for the KNC architecture'],
+     'knl'                            : [False, 'Whether to optimize for the KNL architecture'],
+     'maxwell'                        : [False, 'Whether to optimize for the MAXWELL architecture'],
+     'maxwell50'                      : [False, 'Whether to optimize for the MAXWELL50 architecture'],
+     'maxwell52'                      : [False, 'Whether to optimize for the MAXWELL52 architecture'],
+     'maxwell53'                      : [False, 'Whether to optimize for the MAXWELL53 architecture'],
+     'pascal60'                       : [False, 'Whether to optimize for the PASCAL60 architecture'],
+     'pascal61'                       : [False, 'Whether to optimize for the PASCAL61 architecture'],
+     'power7'                         : [False, 'Whether to optimize for the POWER7 architecture'],
+     'power8'                         : [False, 'Whether to optimize for the POWER8 architecture'],
+     'power9'                         : [False, 'Whether to optimize for the POWER9 architecture'],
+     'ryzen'                          : [False, 'Whether to optimize for the RYZEN architecture'],
+     'skx'                            : [False, 'Whether to optimize for the SKX architecture'],
+     'snb'                            : [ True, 'Whether to optimize for the SNB architecture'],
+     'turing75'                       : [False, 'Whether to optimize for the TURING75 architecture'],
+     'vega'                           : [False, 'Whether to optimize for the VEGA architecture'],
+     'volta70'                        : [False, 'Whether to optimize for the VOLTA70 architecture'],
+     'volta72'                        : [False, 'Whether to optimize for the VOLTA72 architecture'],
+     'wsm'                            : [False, 'Whether to optimize for the WSM architecture'],
+    }
+
+    arch_values = list(arch_variants.keys())
     variant(
-        'kokkos_arch',
-        default='None',
+        'arch',
+        default=None,
         values=arch_values,
         description='Set the architecture to optimize for'
     )
 
-    cuda_variants = {
-      'UVM'             : "Force data structures to use UVM by default for CUDA",
-      'LDG_Intrinsic'   : "Use LDG intrinstics for read-only caching",
-      'RDC'             : "Compile for relocatable device code",
-      'Lambda'          : "Enable experimental Lambda featuers",
-    }
-    for opt in cuda_variants: #add as a lowercase option
-      variant("cuda_%s" % opt.lower(), default=False,
-              description=cuda_variants[opt])
+    for arch in arch_values:
+      for cuda_arch in cuda_arches:
+        if cuda_arch in arch:
+          conflicts("+%s" % arch, when="~cuda", 
+                    msg="Must specify +cuda for CUDA backend to use GPU architecture %s" % arch)
+      dflt, desc = arch_variants[arch]
+      variant(arch, default=dflt, description=desc)
 
-    # Check that we haven't specified a gpu architecture
-    # without specifying CUDA
-    for p in gpu_values:
-        conflicts('gpu_arch={0}'.format(p), when='~cuda',
-            msg='Must specify CUDA backend to use a GPU architecture.')
+    devices_values = list(devices_variants.keys())
+    for dev in devices_variants:
+      dflt, desc = devices_variants[dev]
+      variant(dev, default=dflt, description=desc)
 
-    for opt in cuda_variants:
-      conflicts('+%s' % opt, when="~cuda", msg="Must enable CUDA to use %s" % opt)
+    variant(
+      'devices',
+      default=None,
+      values=devices_values,
+      description='Set the devices to optimize for'
+    )
 
-    # Specify that v1.x is required as v2.x has API changes
-    depends_on('hwloc', when="+hwloc")
-    depends_on('cuda', when='+cuda')
+    options_values = list(options_variants.keys())
+    for opt in options_values:
+      if "cuda" in opt:
+        conflicts('+%s' % opt, when="~cuda", msg="Must enable CUDA to use %s" % opt)
+      dflt, desc = options_variants[opt]
+      variant(opt, default=dflt, description=desc)
 
-    def append_enables(self, options, enable_list, prefix="", upper=True):
-      for enabled in enable_list:
-        var = enabled
-        enableStr = "+%s" % var.lower()
+    tpls_values = list(tpls_variants.keys())
+    for tpl in tpls_values:
+      dflt, desc = tpls_variants[tpl]
+      variant(tpl, default=dflt, description=desc)
+      depends_on(tpl, when="+%s" % tpl)
+
+    def append_args(self, cmake_prefix, cmake_options, spack_options):
+      for opt in cmake_options:
+        enableStr = "+%s" % opt
         if enableStr in self.spec:
-          if prefix:
-            var = prefix + var
-          if upper:
-            var = var.upper()
-          options.append("-DKOKKOS_ENABLE_%s=ON" % var)
+          spack_options.append("-DKokkos_%s_%s=ON" % (prefix,opt))
         
   
     def cmake_args(self):
       spec = self.spec
       options = []
 
-      if spec.variants["kokkos_arch"].value:
-        options.append("-DKOKKOS_ARCH=%s" % spec.variants["kokkos_arch"].value)
+      if spec.variants["arch"].value:
+        options.append("-DKokkos_ARCH=%s" % spec.variants["arch"].value)
+      if spec.variants["devices"].value:
+        options.append("-DKokkos_DEVICES=%s" % spec.variants["devices"].value)
 
-      for tpl in "hwloc",:
-        specStr = "+%s" % tpl
-        if specStr in spec:
-          options.append("-DKOKKOS_ENABLE_%s=ON" % tpl.upper())
-          options.append("-D%s_DIR=%s" % (tpl, spec[tpl].prefix))
-
-      if self.run_tests:
-        options.append("-DKokkos_ENABLE_TESTS=ON")
-
-      self.append_enables(options, self.universal_variants)
-      self.append_enables(options, self.cuda_variants, "Cuda_", upper=False)
-      self.append_enables(options, self.backends, upper=True)
-
-      #special cases
-      #deprecated code gets enabled by default internally in the cmake - shut it off in spack
-      if not "+deprecated_code" in self.spec:
-        options.append("-DKOKKOS_ENABLE_DEPRECATED_CODE=OFF")
+      self.append_args("ENABLE", self.devices_values,  options)
+      self.append_args("ENABLE", self.options_values, options)
+      self.append_args("ENABLE", self.tpls_values, options)
+      self.append_args("ARCH",   self.arch_values, options)
 
       return options
 
