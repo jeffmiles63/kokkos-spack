@@ -13,7 +13,7 @@ class KokkosTutorial(CMakePackage):
     homepage = "https://github.com/kokkos/kokkos"
     git      = "https://github.com/kokkos/kokkos.git"
 
-    version("cmake", branch="tutorial")
+    version("diy", branch="master")
 
     variants = {
      'cuda'                           : [False, 'Whether to build CUDA backend'],

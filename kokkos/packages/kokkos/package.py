@@ -14,7 +14,10 @@ class Kokkos(CMakePackage):
     url      = "https://github.com/kokkos/kokkos/archive/2.8.00.tar.gz"
     git      = "https://github.com/kokkos/kokkos.git"
 
-    version('cmake', branch='cmake-overhaul')
+    version('develop', branch='develop')
+    version('cmake',   branch='cmake-overhaul')
+    version('diy',     branch='diy')
+
     
     devices_variants = {
      'cuda'                           : [False, 'Whether to build CUDA backend'],
@@ -27,14 +30,14 @@ class Kokkos(CMakePackage):
     tpls_variants = {
       'hpx'                            : [False, 'Whether to enable the HPX library'],
       'hwloc'                          : [False, 'Whether to enable the HWLOC library'],
-      'libnuma'                        : [False, 'Whether to enable the LIBNUMA library'],
+      'numactl'                        : [False, 'Whether to enable the LIBNUMA library'],
       'memkind'                        : [False, 'Whether to enable the MEMKIND library'],
     }
 
     options_variants = {
      'aggressive_vectorization'       : [False, 'Whether to aggressively vectorize loops'],
      'compiler_warnings'              : [False, 'Whether to print all compiler warnings'],
-     'cuda_lambda'                    : [False, 'Whether to activate experimental laambda features'],
+     'cuda_lambda'                    : [False, 'Whether to activate experimental lambda features'],
      'cuda_ldg_intrinsic'             : [False, 'Whether to use CUDA LDG intrinsics'],
      'cuda_relocatable_device_code'   : [False, 'Whether to enable relocatable device code (RDC) for CUDA'],
      'cuda_uvm'                       : [False, 'Whether to enable unified virtual memory (UVM) for CUDA'],
@@ -67,14 +70,12 @@ class Kokkos(CMakePackage):
      'gfx901'                         : [False, 'Whether to optimize for the GFX901 architecture'],
      'hsw'                            : [ True, 'optimize for architecture HSW'],
      'kaveri'                         : [False, 'Whether to optimize for the KAVERI architecture'],
-     'kepler'                         : [False, 'Whether to optimize for the KEPLER architecture'],
      'kepler30'                       : [False, 'Whether to optimize for the KEPLER30 architecture'],
      'kepler32'                       : [False, 'Whether to optimize for the KEPLER32 architecture'],
      'kepler35'                       : [False, 'Whether to optimize for the KEPLER35 architecture'],
      'kepler37'                       : [False, 'Whether to optimize for the KEPLER37 architecture'],
      'knc'                            : [False, 'Whether to optimize for the KNC architecture'],
      'knl'                            : [False, 'Whether to optimize for the KNL architecture'],
-     'maxwell'                        : [False, 'Whether to optimize for the MAXWELL architecture'],
      'maxwell50'                      : [False, 'Whether to optimize for the MAXWELL50 architecture'],
      'maxwell52'                      : [False, 'Whether to optimize for the MAXWELL52 architecture'],
      'maxwell53'                      : [False, 'Whether to optimize for the MAXWELL53 architecture'],
@@ -95,14 +96,6 @@ class Kokkos(CMakePackage):
 
     arch_values = list(arch_variants.keys())
     allowed_arch_values = arch_values[:]
-    allowed_arch_values.append("none")
-    variant(
-      'arch',
-      default="none",
-      values=allowed_arch_values,
-      description='Set the architecture to optimize for'
-    )
-
     for arch in arch_values:
       for cuda_arch in cuda_arches:
         if cuda_arch in arch:
@@ -112,12 +105,6 @@ class Kokkos(CMakePackage):
       variant(arch, default=dflt, description=desc)
 
     devices_values = list(devices_variants.keys())
-    variant(
-      'devices',
-      default="serial",
-      values=devices_values,
-      description='Set the devices to optimize for'
-    )
     for dev in devices_variants:
       dflt, desc = devices_variants[dev]
       variant(dev, default=dflt, description=desc)
@@ -139,21 +126,20 @@ class Kokkos(CMakePackage):
     def append_args(self, cmake_prefix, cmake_options, spack_options):
       for opt in cmake_options:
         enableStr = "+%s" % opt
+        optUC = opt.upper()
         if enableStr in self.spec:
-          spack_options.append("-DKokkos_%s_%s=ON" % (prefix,opt))
+          spack_options.append("-DKokkos_%s_%s=ON" % (cmake_prefix,optUC))
         
   
     def cmake_args(self):
       spec = self.spec
       options = []
 
-      if spec.variants["arch"].value:
-        if spec.variants["arch"].value != "none":
-          options.append("-DKokkos_ARCH=%s" % spec.variants["arch"].value)
-      if spec.variants["devices"].value:
-        options.append("-DKokkos_DEVICES=%s" % spec.variants["devices"].value)
+      isDiy = "@diy" in spec
+      if isDiy:
+        options.append("-DSpack_WORKAROUND=On")
 
-      self.append_args("ENABLE", self.devices_values,  options)
+      self.append_args("ENABLE", self.devices_values, options)
       self.append_args("ENABLE", self.options_values, options)
       self.append_args("ENABLE", self.tpls_values, options)
       self.append_args("ARCH",   self.arch_values, options)
