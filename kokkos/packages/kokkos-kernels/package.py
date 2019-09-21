@@ -14,13 +14,15 @@ class KokkosKernels(CMakePackage):
     git      = "https://github.com/kokkos/kokkos-kernels.git"
 
     version('develop', branch='develop')
-    version('diy',     branch='cmake-overhaul')
+    version('cmake', branch='cmake-overhaul')
 
     backends = {
       'serial'    : (True,  "enable Serial backend (default)"),
       'cuda'      : (False, "enable Cuda backend"),
-      'openmp'    : (False, "enable OpenMP backend",)
+      'openmp'    : (False, "enable OpenMP backend"),
     }
+
+    variant("diy", default=False, description="Add necessary flags for Spack DIY mode")
 
     depends_on("kokkos")
     for backend in backends:
@@ -28,7 +30,6 @@ class KokkosKernels(CMakePackage):
       variant(backend.lower(), default=deflt, description=descr)
       depends_on("kokkos+%s" % backend.lower(), when="+%s" % backend.lower())
     depends_on("kokkos@develop", when="@develop")
-    depends_on("kokkos@develop", when="@diy")
 
     etis = {
       "double"                : (True,   "ETI doubles"),
@@ -67,7 +68,7 @@ class KokkosKernels(CMakePackage):
       spec = self.spec
       options = []
 
-      isDiy = "@diy" in spec
+      isDiy = "+diy" in spec
       if isDiy:
         options.append("-DSpack_WORKAROUND=On")
 

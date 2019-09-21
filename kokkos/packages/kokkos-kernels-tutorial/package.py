@@ -21,7 +21,7 @@ class KokkosKernelsTutorial(CMakePackage):
       'openmp'    : (False, "enable OpenMP backend",)
     }
 
-    depends_on("kokkos-kernels@develop")
+    depends_on("kokkos-kernels@cmake")
     for backend in backends:
       deflt, descr = backends[backend]
       variant(backend.lower(), default=deflt, description=descr)

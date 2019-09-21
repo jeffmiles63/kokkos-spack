@@ -15,9 +15,6 @@ class Kokkos(CMakePackage):
     git      = "https://github.com/kokkos/kokkos.git"
 
     version('develop', branch='develop')
-    version('cmake',   branch='cmake-overhaul')
-    version('diy',     branch='diy')
-
     
     devices_variants = {
      'cuda'                           : [False, 'Whether to build CUDA backend'],
@@ -123,6 +120,8 @@ class Kokkos(CMakePackage):
       variant(tpl, default=dflt, description=desc)
       depends_on(tpl, when="+%s" % tpl)
 
+    variant("diy", default=False, description="Add necessary flags for Spack DIY mode")
+
     def append_args(self, cmake_prefix, cmake_options, spack_options):
       for opt in cmake_options:
         enableStr = "+%s" % opt
@@ -135,7 +134,7 @@ class Kokkos(CMakePackage):
       spec = self.spec
       options = []
 
-      isDiy = "@diy" in spec
+      isDiy = "+diy" in spec
       if isDiy:
         options.append("-DSpack_WORKAROUND=On")
 
