@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 from spack import *
+import os
 
 
 class KokkosNvccWrapper(CMakePackage):
@@ -18,11 +19,10 @@ class KokkosNvccWrapper(CMakePackage):
     depends_on("cuda")
     
     def cmake_args(self):
-	import os
-	options = [ 
-	 "-DCMAKE_CXX_COMPILER=%s" % os.environ["SPACK_CXX"],
-	 "-DCMAKE_CUDA_HOST_COMPILER=%s" % os.environ["SPACK_CXX"],
-	 "-DCMAKE_C_COMPILER=%s" % os.environ["SPACK_CC"],
-	]
-	return options
+      options = [
+       "-DCMAKE_CXX_COMPILER=%s" % os.environ["SPACK_CXX"],
+       "-DCMAKE_CUDA_HOST_COMPILER=%s" % os.environ["SPACK_CXX"],
+       "-DCMAKE_C_COMPILER=%s" % os.environ["SPACK_CC"],
+      ]
+      return options
 

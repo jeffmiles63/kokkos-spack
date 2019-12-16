@@ -6,7 +6,7 @@
 from spack import *
 
 
-class Kokkos(CMakePackage):
+class Kokkos(CMakePackage, CudaPackage):
     """Kokkos implements a programming model in C++ for writing performance
     portable applications targeting all major HPC platforms."""
 
@@ -18,10 +18,10 @@ class Kokkos(CMakePackage):
     
     devices_variants = {
      'cuda'                           : [False, 'Whether to build CUDA backend'],
-     'openmp'                         : [ True, 'Whether to build OpenMP backend'],
+     'openmp'                         : [False, 'Whether to build OpenMP backend'],
      'pthread'                        : [False, 'Whether to build Pthread backend'],
      'rocm'                           : [False, 'Whether to build AMD ROCm backend'],
-     'serial'                         : [ True, 'Whether to build serial backend'],
+     'serial'                         : [False, 'Whether to build serial backend'],
     }
 
     tpls_variants = {
@@ -51,28 +51,26 @@ class Kokkos(CMakePackage):
      'tests'                          : [False, 'Whether to build for tests'],
     }
 
-    cuda_arches = ["kepler" "maxwell", "pascal", "volta", "turing"]
-
     arch_variants = {
      'amdavx'                         : [False, 'Whether to optimize for the AMDAVX architecture'],
      'armv80'                         : [False, 'Whether to optimize for the ARMV80 architecture'],
      'armv81'                         : [False, 'Whether to optimize for the ARMV81 architecture'],
      'armv8_thunderx'                 : [False, 'Whether to optimize for the ARMV8_THUNDERX architecture'],
      'armv8_tx2'                      : [False, 'Whether to optimize for the ARMV8_TX2 architecture'],
-     'bdw'                            : [False, 'Whether to optimize for the BDW architecture'],
-     'bgq'                            : [False, 'Whether to optimize for the BGQ architecture'],
+     'bdw'                            : [False, 'Whether to optimize for the Broadwell architecture'],
+     'bgq'                            : [False, 'Whether to optimize for the Blue Gene/Q architecture'],
      'carrizo'                        : [False, 'Whether to optimize for the CARRIZO architecture'],
      'epyc'                           : [False, 'Whether to optimize for the EPYC architecture'],
      'fiji'                           : [False, 'Whether to optimize for the FIJI architecture'],
      'gfx901'                         : [False, 'Whether to optimize for the GFX901 architecture'],
-     'hsw'                            : [ True, 'optimize for architecture HSW'],
+     'hsw'                            : [False, 'optimize for architecture HSW'],
      'kaveri'                         : [False, 'Whether to optimize for the KAVERI architecture'],
      'kepler30'                       : [False, 'Whether to optimize for the KEPLER30 architecture'],
      'kepler32'                       : [False, 'Whether to optimize for the KEPLER32 architecture'],
      'kepler35'                       : [False, 'Whether to optimize for the KEPLER35 architecture'],
      'kepler37'                       : [False, 'Whether to optimize for the KEPLER37 architecture'],
-     'knc'                            : [False, 'Whether to optimize for the KNC architecture'],
-     'knl'                            : [False, 'Whether to optimize for the KNL architecture'],
+     'knc'                            : [False, 'Whether to optimize for the Knights Corner architecture'],
+     'knl'                            : [False, 'Whether to optimize for the Knights Landing architecture'],
      'maxwell50'                      : [False, 'Whether to optimize for the MAXWELL50 architecture'],
      'maxwell52'                      : [False, 'Whether to optimize for the MAXWELL52 architecture'],
      'maxwell53'                      : [False, 'Whether to optimize for the MAXWELL53 architecture'],
@@ -82,14 +80,76 @@ class Kokkos(CMakePackage):
      'power8'                         : [False, 'Whether to optimize for the POWER8 architecture'],
      'power9'                         : [False, 'Whether to optimize for the POWER9 architecture'],
      'ryzen'                          : [False, 'Whether to optimize for the RYZEN architecture'],
-     'skx'                            : [False, 'Whether to optimize for the SKX architecture'],
-     'snb'                            : [ True, 'Whether to optimize for the SNB architecture'],
+     'skx'                            : [False, 'Whether to optimize for the Skylake architecture'],
+     'snb'                            : [False, 'Whether to optimize for the Sandybridge architecture'],
      'turing75'                       : [False, 'Whether to optimize for the TURING75 architecture'],
      'vega'                           : [False, 'Whether to optimize for the VEGA architecture'],
      'volta70'                        : [False, 'Whether to optimize for the VOLTA70 architecture'],
      'volta72'                        : [False, 'Whether to optimize for the VOLTA72 architecture'],
-     'wsm'                            : [False, 'Whether to optimize for the WSM architecture'],
+     'wsm'                            : [False, 'Whether to optimize for the Westmere architecture'],
     }
+
+    spack_micro_arch_map = {
+     "aarch64"     : "",
+     "arm"         : "",
+     "ppc"         : "",
+     "ppc64"       : "",
+     "ppc64le"     : "",
+     "ppcle"       : "",
+     "sparc"       : None,
+     "sparc64"     : None,
+     "x86"         : "",
+     "x86_64"      : "",
+     "thunderx2"   : "THUNDERX2",
+     "k10"         : None,
+     "zen"         : "RYZEN",
+     "bulldozer"   : "",
+     "piledriver"  : "",
+     "zen2"        : "RYZEN",
+     "steamroller" : "",
+     "excavator"   : "",
+     "a64fx"       : "",
+     "power7"      : "POWER7",
+     "power8"      : "POWER8",
+     "power9"      : "POWER9",
+     "power8le"    : "POWER8",
+     "power9le"    : "POWER9",
+     "i686"        : None,
+     "pentium2"    : None,
+     "pentium3"    : None,
+     "pentium4"    : None,
+     "prescott"    : None,
+     "nocona"      : None,
+     "nehalem"     : None,
+     "sandybridge" : "SNB",
+     "haswell"     : "HSW",
+     "mic_knl"     : "KNL",
+     "cannonlake"  : "SKX",
+     "cascadelake" : "SKX",
+     "westmere"    : "WSM",
+     "core2"       : None,
+     "ivybridge"   : "SNB",
+     "broadwell"   : "BDW",
+     "skylake"     : "SKX",
+     "icelake"     : "SKX",
+     "skylake_avx512" : "SKX",
+    }
+
+    spack_cuda_arch_map = {
+     30 : 'kepler30',
+     32 : 'kepler32',
+     35 : 'kepler35',
+     37 : 'kepler37',
+     50 : 'maxwell50',
+     52 : 'maxwell52',
+     53 : 'maxwell53',
+     60 : 'pascal60',
+     61 : 'pascal61',
+     70 : 'volta70',
+     72 : 'volta72',
+     75 : 'turing75',
+    }
+    cuda_arches = spack_cuda_arch_map.values()
 
     arch_values = list(arch_variants.keys())
     allowed_arch_values = arch_values[:]
@@ -127,7 +187,9 @@ class Kokkos(CMakePackage):
         enableStr = "+%s" % opt
         optUC = opt.upper()
         if enableStr in self.spec:
-          spack_options.append("-DKokkos_%s_%s=ON" % (cmake_prefix,optUC))
+          option = "-DKokkos_%s_%s=ON" % (cmake_prefix,optUC)
+          if not option in spack_options:
+            spack_options.append(option)
         
   
     def cmake_args(self):
@@ -137,6 +199,17 @@ class Kokkos(CMakePackage):
       isDiy = "+diy" in spec
       if isDiy:
         options.append("-DSpack_WORKAROUND=On")
+
+      spack_microarches = []
+      if "+cuda" in spec:
+        cuda_arch = spec.variants["cuda_arch"].value
+        kokkos_arch_name = self.cuda_arch_map[cuda_arch]
+        spack_microarches.append(kokkos_arch_name)
+      kokkos_microarch_name = self.spack_microarch_map[spec.target.name]
+      if kokkos_miacroarch_name:
+        spack_microarches.append(kokkos_microarch_name)
+      for arch in spack_microarches:
+        options.append("-DKokkos_ARCH_%s" % arch.upper())
 
       self.append_args("ENABLE", self.devices_values, options)
       self.append_args("ENABLE", self.options_values, options)
