@@ -6,7 +6,7 @@
 from spack import *
 
 
-class KokkosTutorial(CMakePackage):
+class KokkosTutorial(CMakePackage,CudaPackage):
     """Kokkos implements a programming model in C++ for writing performance
     portable applications targeting all major HPC platforms."""
 
@@ -17,13 +17,13 @@ class KokkosTutorial(CMakePackage):
 
     variants = {
      'cuda'                           : [False, 'Whether to build CUDA backend'],
-     'openmp'                         : [ True, 'Whether to build OpenMP backend'],
+     'openmp'                         : [False, 'Whether to build OpenMP backend'],
      'pthread'                        : [False, 'Whether to build Pthread backend'],
      'rocm'                           : [False, 'Whether to build AMD ROCm backend'],
-     'serial'                         : [ True, 'Whether to build serial backend'],
+     'serial'                         : [False, 'Whether to build serial backend'],
      'hpx'                            : [False, 'Whether to enable the HPX library'],
      'hwloc'                          : [False, 'Whether to enable the HWLOC library'],
-     'libnuma'                        : [False, 'Whether to enable the LIBNUMA library'],
+     'numactl'                        : [False, 'Whether to enable the LIBNUMA library'],
      'memkind'                        : [False, 'Whether to enable the MEMKIND library'],
      'aggressive_vectorization'       : [False, 'Whether to aggressively vectorize loops'],
      'compiler_warnings'              : [False, 'Whether to print all compiler warnings'],
@@ -53,16 +53,14 @@ class KokkosTutorial(CMakePackage):
      'epyc'                           : [False, 'Whether to optimize for the EPYC architecture'],
      'fiji'                           : [False, 'Whether to optimize for the FIJI architecture'],
      'gfx901'                         : [False, 'Whether to optimize for the GFX901 architecture'],
-     'hsw'                            : [ True, 'optimize for architecture HSW'],
+     'hsw'                            : [False, 'optimize for architecture HSW'],
      'kaveri'                         : [False, 'Whether to optimize for the KAVERI architecture'],
-     'kepler'                         : [False, 'Whether to optimize for the KEPLER architecture'],
      'kepler30'                       : [False, 'Whether to optimize for the KEPLER30 architecture'],
      'kepler32'                       : [False, 'Whether to optimize for the KEPLER32 architecture'],
      'kepler35'                       : [False, 'Whether to optimize for the KEPLER35 architecture'],
      'kepler37'                       : [False, 'Whether to optimize for the KEPLER37 architecture'],
      'knc'                            : [False, 'Whether to optimize for the KNC architecture'],
      'knl'                            : [False, 'Whether to optimize for the KNL architecture'],
-     'maxwell'                        : [False, 'Whether to optimize for the MAXWELL architecture'],
      'maxwell50'                      : [False, 'Whether to optimize for the MAXWELL50 architecture'],
      'maxwell52'                      : [False, 'Whether to optimize for the MAXWELL52 architecture'],
      'maxwell53'                      : [False, 'Whether to optimize for the MAXWELL53 architecture'],
@@ -73,7 +71,7 @@ class KokkosTutorial(CMakePackage):
      'power9'                         : [False, 'Whether to optimize for the POWER9 architecture'],
      'ryzen'                          : [False, 'Whether to optimize for the RYZEN architecture'],
      'skx'                            : [False, 'Whether to optimize for the SKX architecture'],
-     'snb'                            : [ True, 'Whether to optimize for the SNB architecture'],
+     'snb'                            : [False, 'Whether to optimize for the SNB architecture'],
      'turing75'                       : [False, 'Whether to optimize for the TURING75 architecture'],
      'vega'                           : [False, 'Whether to optimize for the VEGA architecture'],
      'volta70'                        : [False, 'Whether to optimize for the VOLTA70 architecture'],

@@ -136,18 +136,18 @@ class Kokkos(CMakePackage, CudaPackage):
     }
 
     spack_cuda_arch_map = {
-     30 : 'kepler30',
-     32 : 'kepler32',
-     35 : 'kepler35',
-     37 : 'kepler37',
-     50 : 'maxwell50',
-     52 : 'maxwell52',
-     53 : 'maxwell53',
-     60 : 'pascal60',
-     61 : 'pascal61',
-     70 : 'volta70',
-     72 : 'volta72',
-     75 : 'turing75',
+     "30" : 'kepler30',
+     "32" : 'kepler32',
+     "35" : 'kepler35',
+     "37" : 'kepler37',
+     "50" : 'maxwell50',
+     "52" : 'maxwell52',
+     "53" : 'maxwell53',
+     "60" : 'pascal60',
+     "61" : 'pascal61',
+     "70" : 'volta70',
+     "72" : 'volta72',
+     "75" : 'turing75',
     }
     cuda_arches = spack_cuda_arch_map.values()
 
@@ -202,14 +202,16 @@ class Kokkos(CMakePackage, CudaPackage):
 
       spack_microarches = []
       if "+cuda" in spec:
-        cuda_arch = spec.variants["cuda_arch"].value
-        kokkos_arch_name = self.cuda_arch_map[cuda_arch]
-        spack_microarches.append(kokkos_arch_name)
-      kokkos_microarch_name = self.spack_microarch_map[spec.target.name]
-      if kokkos_miacroarch_name:
+        #this is a list
+        for cuda_arch in spec.variants["cuda_arch"].value:
+          if not cuda_arch == "none":
+            kokkos_arch_name = self.spack_cuda_arch_map[cuda_arch]
+            spack_microarches.append(kokkos_arch_name)
+      kokkos_microarch_name = self.spack_micro_arch_map[spec.target.name]
+      if kokkos_microarch_name:
         spack_microarches.append(kokkos_microarch_name)
       for arch in spack_microarches:
-        options.append("-DKokkos_ARCH_%s" % arch.upper())
+        options.append("-DKokkos_ARCH_%s=ON" % arch.upper())
 
       self.append_args("ENABLE", self.devices_values, options)
       self.append_args("ENABLE", self.options_values, options)

@@ -6,7 +6,7 @@
 from spack import *
 
 
-class KokkosKernels(CMakePackage):
+class KokkosKernels(CMakePackage,CudaPackage):
     """Kokkos Kernels provides math kernels, often BLAS or LAPACK
     for small matrices, that can be used in larger Kokkos parallel routines"""
 
@@ -17,7 +17,7 @@ class KokkosKernels(CMakePackage):
     version('cmake', branch='cmake-overhaul')
 
     backends = {
-      'serial'    : (True,  "enable Serial backend (default)"),
+      'serial'    : (False,  "enable Serial backend (default)"),
       'cuda'      : (False, "enable Cuda backend"),
       'openmp'    : (False, "enable OpenMP backend"),
     }
@@ -74,13 +74,13 @@ class KokkosKernels(CMakePackage):
 
       options.append("-DKokkos_ROOT=%s" % spec["kokkos"].prefix)
 
-      atLeastOneBackend = False
-      for be in self.backends:
-        flag = "+%s" % be.lower()
-        if flag in self.spec:
-          atLeastOneBackend = True
-      if not atLeastOneBackend:
-        raise Exception("Need at least one Kokkos backend specified")
+      #atLeastOneBackend = False
+      #for be in self.backends:
+      #  flag = "+%s" % be.lower()
+      #  if flag in self.spec:
+      #    atLeastOneBackend = True
+      #if not atLeastOneBackend:
+      #  raise Exception("Need at least one Kokkos backend specified")
 
       if self.run_tests:
         options.append("-DKokkosKernels_ENABLE_TESTS=ON")
