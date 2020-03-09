@@ -11,11 +11,13 @@ class Kokkos(CMakePackage, CudaPackage):
     portable applications targeting all major HPC platforms."""
 
     homepage = "https://github.com/kokkos/kokkos"
-    url      = "https://github.com/kokkos/kokkos/archive/2.8.00.tar.gz"
     git      = "https://github.com/kokkos/kokkos.git"
 
     version('develop', branch='develop')
-    
+    version('master',  branch='master')
+    version('3.0', url="https://github.com/kokkos/kokkos/archive/3.0.00.tar.gz",
+            sha256="c00613d0194a4fbd0726719bbed8b0404ed06275f310189b3493f5739042a92b")
+
     devices_variants = {
      'cuda'                           : [False, 'Whether to build CUDA backend'],
      'openmp'                         : [False, 'Whether to build OpenMP backend'],
@@ -180,6 +182,10 @@ class Kokkos(CMakePackage, CudaPackage):
       variant(tpl, default=dflt, description=desc)
       depends_on(tpl, when="+%s" % tpl)
 
+    variant("wrapper", default=False, description="Use nvcc-wrapper for CUDA build")
+    depends_on("kokkos-nvcc-wrapper", when="+wrapper")
+    conflicts("+wrapper", when="~cuda")
+
     variant("diy", default=False, description="Add necessary flags for Spack DIY mode")
 
     def append_args(self, cmake_prefix, cmake_options, spack_options):
@@ -190,8 +196,13 @@ class Kokkos(CMakePackage, CudaPackage):
           option = "-DKokkos_%s_%s=ON" % (cmake_prefix,optUC)
           if not option in spack_options:
             spack_options.append(option)
-        
-  
+
+    def setup_dependent_package(self, module, dependent_spec):
+      try:
+        self.spec.kokkos_cxx = self.spec["kokkos-nvcc-wrapper"].kokkos_cxx
+      except Exception as e:
+        self.spec.kokkos_cxx = spack_cxx
+
     def cmake_args(self):
       spec = self.spec
       options = []
@@ -222,6 +233,13 @@ class Kokkos(CMakePackage, CudaPackage):
         var = "+%s" % tpl
         if var in self.spec:
           options.append("-D%s_DIR=%s" % (tpl, spec[tpl].prefix))
+
+      #we do not need the compiler wrapper from Spack
+      #set the compiler explicitly (may be Spack wrapper or nvcc-wrapper)
+      try:
+        options.append("-DCMAKE_CXX_COMPILER=%s" % self.spec["kokkos-nvcc-wrapper"].kokkos_cxx)
+      except Exception as e:
+        options.append("-DCMAKE_CXX_COMPILER=%s" % spack_cxx)
 
       return options
 

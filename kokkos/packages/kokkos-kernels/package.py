@@ -13,22 +13,14 @@ class KokkosKernels(CMakePackage,CudaPackage):
     homepage = "https://github.com/kokkos/kokkos-kernels"
     git      = "https://github.com/kokkos/kokkos-kernels.git"
 
+    version('3.0',     url='https://github.com/kokkos/kokkos-kernels/archive/3.0.00.tar.gz',
+            sha256="e4b832aed3f8e785de24298f312af71217a26067aea2de51531e8c1e597ef0e6")
     version('develop', branch='develop')
-    version('cmake', branch='cmake-overhaul')
-
-    backends = {
-      'serial'    : (False,  "enable Serial backend (default)"),
-      'cuda'      : (False, "enable Cuda backend"),
-      'openmp'    : (False, "enable OpenMP backend"),
-    }
+    version('master',  branch='master')
 
     variant("diy", default=False, description="Add necessary flags for Spack DIY mode")
 
     depends_on("kokkos")
-    for backend in backends:
-      deflt, descr = backends[backend]
-      variant(backend.lower(), default=deflt, description=descr)
-      depends_on("kokkos+%s" % backend.lower(), when="+%s" % backend.lower())
     depends_on("kokkos@develop", when="@develop")
 
     etis = {
@@ -73,14 +65,8 @@ class KokkosKernels(CMakePackage,CudaPackage):
         options.append("-DSpack_WORKAROUND=On")
 
       options.append("-DKokkos_ROOT=%s" % spec["kokkos"].prefix)
-
-      #atLeastOneBackend = False
-      #for be in self.backends:
-      #  flag = "+%s" % be.lower()
-      #  if flag in self.spec:
-      #    atLeastOneBackend = True
-      #if not atLeastOneBackend:
-      #  raise Exception("Need at least one Kokkos backend specified")
+      # Compiler weirdness due to nvcc_wrapper
+      options.append("-DCMAKE_CXX_COMPILER=%s" % spec["kokkos"].kokkos_cxx)
 
       if self.run_tests:
         options.append("-DKokkosKernels_ENABLE_TESTS=ON")

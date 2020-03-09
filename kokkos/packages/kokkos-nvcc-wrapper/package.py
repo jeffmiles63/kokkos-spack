@@ -14,9 +14,11 @@ class KokkosNvccWrapper(CMakePackage):
     homepage = "https://github.com/kokkos/kokkos"
     git      = "git@github.com:jjwilke/kokkos-nvcc-wrapper.git"
 
+    version('old',    branch='old-behavior')
     version('master', branch='master')
 
     depends_on("cuda")
+    depends_on("mpi")
     
     def cmake_args(self):
       options = [
@@ -26,3 +28,12 @@ class KokkosNvccWrapper(CMakePackage):
       ]
       return options
 
+    def setup_dependent_build_environment(self, env, dependent_spec):
+        wrapper = join_path(self.prefix.bin, "nvcc_wrapper")
+        env.set('MPICH_CXX', wrapper)
+        env.set('OMPI_CXX', wrapper)
+        env.set('KOKKOS_CXX', spack_cxx)
+
+    def setup_dependent_package(self, module, dependent_spec):
+        wrapper = join_path(self.prefix.bin, "nvcc_wrapper")
+        self.spec.kokkos_cxx = wrapper
