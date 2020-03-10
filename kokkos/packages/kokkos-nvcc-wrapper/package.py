@@ -17,7 +17,7 @@ class KokkosNvccWrapper(CMakePackage):
     version('old',    branch='old-behavior')
     version('master', branch='master')
 
-    variant("mpi", default=True, "use with MPI as the underlying compiler")
+    variant("mpi", default=True, description="use with MPI as the underlying compiler")
     depends_on("cuda")
     depends_on("mpi", when="+mpi")
     
