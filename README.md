@@ -155,6 +155,7 @@ If you don't specify a CUDA build variant in a `packages.yaml` and you build you
 spack install superscience
 ````
 you may end up just getting the default Kokkos (i.e. Serial).
+Several exampls are included in the `yaml` folder for common platforms.
 
 ### Spack Environments
 The encouraged method of using Spack is to use environments.
