@@ -23,6 +23,17 @@ class KokkosKernels(CMakePackage,CudaPackage):
     depends_on("kokkos")
     depends_on("kokkos@develop", when="@develop")
 
+    backends = {
+      'serial'    : (False,  "enable Serial backend (default)"),
+      'cuda'      : (False,  "enable Cuda backend"),
+      'openmp'    : (False,  "enable OpenMP backend"),
+    }
+
+    for backend in backends:
+      deflt, descr = backends[backend]
+      variant(backend.lower(), default=deflt, description=descr)
+      depends_on("kokkos+%s" % backend.lower(), when="+%s" % backend.lower())
+
     etis = {
       "double"                : (True,   "ETI doubles"),
       "float"                 : (False,  "ETI float"),
@@ -47,13 +58,18 @@ class KokkosKernels(CMakePackage,CudaPackage):
       variant(eti, default=deflt, description=descr)
 
     tpls = {
-      "blas"      : (False, "Link to system BLAS"),
-      "mkl"       : (False, "Link to system MKL"),
-      "cublas"    : (False, "Link to CUDA BLAS library"),
-      "cusparse"  : (False, "Link to CUDA sparse library"),
+      #variant name   #deflt   #spack name   #root var name #docstring
+      "blas"         : (False, "blas",       "BLAS",        "Link to system BLAS"),
+      "lapack"       : (False, "lapack",     "LAPACK",      "Link to system LAPACK"),
+      "mkl"          : (False, "mkl",        "MKL",         "Link to system MKL"),
+      "cublas"       : (False, "cuda",       None,          "Link to CUDA BLAS library"),
+      "cusparse"     : (False, "cuda",       None,          "Link to CUDA sparse library"),
+      "superlu"      : (False, "superlu",    "SUPERLU",     "Link to SuperLU library"),
+      "cblas"        : (False, "cblas",      "CBLAS",       "Link to CBLAS library"),
+      "lapacke"      : (False, "clapack",    "LAPACKE",     "Link to LAPACKE library"),
     }
     for tpl in tpls:
-      deflt, descr = tpls[tpl]
+      deflt, spackName, rootName, descr = tpls[tpl]
       variant(tpl, default=deflt, description=descr)
 
     def cmake_args(self):
@@ -74,8 +90,13 @@ class KokkosKernels(CMakePackage,CudaPackage):
       for tpl in self.tpls:
         onFlag = "+%s" % tpl
         offFlag = "~%s" % tpl
+        dflt, spackName, rootName, descr = self.tpls[tpl]
         if onFlag in self.spec:
           options.append("-DKokkosKernels_ENABLE_TPL_%s=ON" % tpl.upper())
+          if rootName:
+            options.append("-D%s_ROOT=%s" % (rootName, spec[spackName].prefix))
+          else:
+            pass #this should get picked up automatically, we hope
         elif offFlag in self.spec:
           options.append("-DKokkosKernels_ENABLE_TPL_%s=OFF" % tpl.upper())
         
