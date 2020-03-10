@@ -121,18 +121,19 @@ A user requests a feature in the final app:
 ````
 spack install superscience+cuda
 ````
-which flows upstream to the Kokkos dependency, causing the `kokkos+cuda` variant to build.
+This flows upstream to the Kokkos dependency, causing the `kokkos+cuda` variant to build.
+The downstream app (SuperScience) tells the upstream app (Kokkos) how to build.
 
 Because Kokkos is a performance portability library, it somewhat inverts this principle.
-Kokkos "flows-down", telling your application how best to build for performance.
+Kokkos "flows-down", telling your application how best to configure for performance.
 Rather than a downstream app (SuperScience) telling the upstream (Kokkos) what variants to build,
-a pre-built Kokkos should be telling the downstream app SuperScience what to build.
-Kokkos works best when an "expert" configures and installs optimally for your system.
-Your build should simply request `-DKokkos_ROOT=<BEST_KOKKOS_FOR_MY_SYSTEM>` and configure appropriately.
+a pre-built Kokkos should be telling the downstream app SuperScience what variants to use.
+Kokkos works best when there is an "expert" configuration installed on your system.
+Your build should simply request `-DKokkos_ROOT=<BEST_KOKKOS_FOR_MY_SYSTEM>` and configure appropriately based on the Kokkos it finds.
 
-Kokkos has many, many variants and many different ways to be built.
+Kokkos has many, many build variants.
 Where possible, projects should only depend on a general Kokkos, not specific variants.
-We recommend instead adding, for each system you build on, an "optimal" Kokkos configuration to your `package.yaml` file (usually found in `~/.spack` for specific users).
+We recommend instead adding, for each system you build on, a Kokkos configuration to your `packages.yaml` file (usually found in `~/.spack` for specific users).
 For a Xeon + Volta system, this could look like:
 ````
  kokkos:
@@ -148,20 +149,20 @@ For a Haswell system, this might look like:
   variants: +openmp +hsw
   compiler: [intel@18]
 ````
-If there is an "optimal" default in your `packages.yaml` file, it is highly likely that the default Kokkos configuration you get will not be what you want.
+Without an optimal default in your `packages.yaml` file, it is highly likely that the default Kokkos configuration you get will not be what you want.
 For example, CUDA is not enabled by default (there is no easy logic to conditionally activate this for CUDA-enabled systems).
 If you don't specify a CUDA build variant in a `packages.yaml` and you build your Kokkos-dependent project:
 ````
 spack install superscience
 ````
 you may end up just getting the default Kokkos (i.e. Serial).
-Several exampls are included in the `yaml` folder for common platforms.
+Some exampls are included in the `yaml` folder for common platforms.
 
 ### Spack Environments
 The encouraged method of using Spack is to use environments.
-Rather than installing packages one-at-a-time, you "add" packages to an environment.
+Rather than installing packages one-at-a-time, you add packages to an environment.
 After adding all packages, you concretize and install them all.
-Using environments, one can explicitly add an "optimal" Kokkos for the environment, e.g.
+Using environments, one can explicitly add a desired Kokkos for the environment, e.g.
 ````
 spack add kokkos +cuda +cuda_lambda +volta70
 ````
@@ -183,8 +184,8 @@ This is still valid for Kokkos. To use the special wrapper for CUDA builds, requ
 spack install kokkos +cuda +wrapper %gcc@7.2.0
 ````
 Downstream projects depending on Kokkos need to override their compiler.
-Kokkos provides the compiler you need in a `kokkos_cxx` variable, 
-which points to either `nvcc_wrapper` when needed, otherwise the regular compiler.
+Kokkos provides the compiler in a `kokkos_cxx` variable,
+which points to either `nvcc_wrapper` when needed or the regular compiler otherwise.
 Spack projects already do this to use MPI compiler wrappers.
 ````
 def cmake_args(self):
@@ -206,7 +207,7 @@ def cmake_args(self):
   return options
 ````
 To accomplish this, `nvcc_wrapper` must depend on MPI (even though it uses no MPI).
-This has the unfortunate consequence that Kokkos CUDA projects not using MPI will implicitly depend on MPI, anyway. 
+This has the unfortunate consequence that Kokkos CUDA projects not using MPI will implicitly depend on MPI anyway.
 This behavior is necessary for now, but will hopefully be removed later.
 When using environments, if MPI is not needed, you can remove the MPI dependency with:
 ````
@@ -223,7 +224,6 @@ Kokkos Kernels also defines a package that can be installed as, e.g.
 spack install kokkos-kernels +serial +float
 ````
 The main variants of Kokkos Kernels are the backend (e.g. serial, cuda, openmp), ETI types to be explicitly instantiated (e.g. float, double, complex_double), and third-party libraries (TPLs) used.
-````
 Kernels derives much of its configuration from the Kokkos installation itself (see above).
 Thus Kokkos Kernels only has a few variants, in constrast to Kokkos which has dozens of variants.
 For most options, tuning the configuration of Kokkos Kernels really means tuning the underlying Kokkos.
@@ -233,7 +233,7 @@ For most options, tuning the configuration of Kokkos Kernels really means tuning
 A Spack 'spec' provides a convenient way to define testing configurations for a CI infrastructure like Jenkins.
 A spec such as:
 ````
-kokkos-kernels@develop +float +double +cuda ^kokkos+uvm
+kokkos-kernels@develop +float +double +cuda
 ````
 defines a particular build of Kokkos Kernels that you want checked consistently on the develop branch.
 By default, testing is not activated. To have Spack both build and test a given spec, run:
