@@ -1,3 +1,5 @@
+![Kokkos](https://avatars2.githubusercontent.com/u/10199860?s=200&v=4)
+
 # Kokkos Spack Repository
 
 This repo will be the most up-to-date location for Spack packages for Kokkos and Kokkos Kernels.
@@ -25,66 +27,7 @@ You can display information about how to install the packages with:
 spack info kokkos
 ````
 This will print all the information about how to install Kokkos with Spack.
-For detailed instructions on how to use Spack, see the [Owner's Manual](https://spack.readthedocs.io).
-````
-Description:
-    Kokkos implements a programming model in C++ for writing performance
-    portable applications targeting all major HPC platforms.
-
-Variants:
-    Name [Default]                    Allowed values          Description
-
-
-    aggressive_vectorization [off]    True, False             set aggressive_vectorization
-                                                              Kokkos option
-    build_type [RelWithDebInfo]       Debug, Release,         CMake build type
-                                      RelWithDebInfo,         
-                                      MinSizeRel              
-    compiler_warnings [off]           True, False             turn on verbose
-                                                              compiler_warnings
-    cuda [off]                        True, False             enable Cuda backend
-    cuda_lambda [off]                 True, False             Enable experimental Lambda
-                                                              featuers
-    cuda_ldg_intrinsic [off]          True, False             Use LDG intrinstics for read-
-                                                              only caching
-    cuda_rdc [off]                    True, False             Compile for relocatable device
-                                                              code
-    cuda_uvm [off]                    True, False             Force data structures to use
-                                                              UVM by default for CUDA
-    deprecated_code [off]             True, False             activates old, deprecated code
-                                                              (please don't use)
-    eti [off]                         True, False             set enable_eti Kokkos option
-    kokkos_arch [None]                Kepler30, Kepler32,     Set the architecture to
-                                      Kepler35, Kepler37,     optimize for
-                                      Maxwell50,              
-                                      Maxwell52,              
-                                      Maxwell53, Pascal60,    
-                                      Pascal61, Volta70,      
-                                      Volta72, AMDAVX,        
-                                      ARMv80, ARMv81,         
-                                      ARMv8-ThunderX,         
-                                      Power7, Power8,         
-                                      Power9, WSM, SNB,       
-                                      HSW, BDW, SKX, KNC,     
-                                      KNL                     
-    openmp [off]                      True, False             enable OpenMP backend
-    pic [off]                         True, False             enable position independent
-                                                              code (-fPIC flag)
-    profiling [off]                   True, False             activate binding for Kokkos
-                                                              profiling tools
-    profiling_load_print [off]        True, False             set enable_profile_load_print
-                                                              Kokkos option
-    serial [off]                      True, False             enable Serial backend
-                                                              (default)
-Build Dependencies:
-    cmake
-    cuda
-    hwloc
-
-Link Dependencies:
-    cuda
-    hwloc
-````
+For detailed instructions on how to use Spack, see the [User Manual](https://spack.readthedocs.io).
 
 ## Setting Up Spack: Avoiding the Package Cascade
 By default, Spack doesn't 'see' anything on your system - including things like CMake and CUDA.
@@ -160,53 +103,115 @@ o  kokkos
 | o | | | | | | | | |  readline
 ````
 
+## Configuring Kokkos as a Project Dependency
+Say you have a project "SuperScience" which needs to use kokkos.
+In your `package.py` file, you would generally include something like:
+````
+class SuperScience(CMakePackage):
+  ...
+  depends_on("kokkos")
+````
+Often projects want to tweak behavior when using certain features, e.g.
+````
+  depends_on("kokkos+cuda", when="+cuda")
+````
+if your project needs CUDA-specific logic to configure and build.
+This illustrates the general principle in Spack of "flowing-up".
+A user requests a feature in the final app:
+````
+spack install superscience+cuda
+````
+which flows upstream to the Kokkos dependency, causing the `kokkos+cuda` variant to build.
+
+Because Kokkos is a performance portability library, it somewhat inverts this principle.
+Kokkos "flows-down", telling your application how best to build for performance.
+Rather than a downstream app (SuperScience) telling the upstream (Kokkos) what variants to build,
+a pre-built Kokkos should be telling the downstream app SuperScience what to build.
+Kokkos works best when an "expert" configures and installs optimally for your system.
+Your build should simply request `-DKokkos_ROOT=<BEST_KOKKOS_FOR_MY_SYSTEM>` and configure appropriately.
+
+Kokkos has many, many variants and many different ways to be built.
+Where possible, projects should only depend on a general Kokkos, not specific variants.
+We recommend instead adding, for each system you build on, an "optimal" Kokkos configuration to your `package.yaml` file (usually found in `~/.spack` for specific users).
+For a Xeon + Volta system, this could look like:
+````
+ kokkos:
+  variants: +cuda +openmp +volta70 +cuda_lambda +wrapper ^cuda@10.1
+  compiler: [gcc@7.2.0]
+````
+which gives the "best" Kokkos configuration as CUDA+OpenMP optimized for a Volta 7.0 architecture using CUDA 10.1.
+It also enables support for CUDA Lambdas.
+The `+wrapper` option tells Kokkos to build with the special `nvcc_wrapper` (more below).
+For a Haswell system, this might look like:
+````
+ kokkos:
+  variants: +openmp +hsw
+  compiler: [intel@18]
+````
+If there is an "optimal" default in your `packages.yaml` file, it is highly likely that the default Kokkos configuration you get will not be what you want.
+For example, CUDA is not enabled by default (there is no easy logic to conditionally activate this for CUDA-enabled systems).
+If you don't specify a CUDA build variant in a `packages.yaml` and you build your Kokkos-dependent project:
+````
+spack install superscience
+````
+you may end up just getting the default Kokkos (i.e. Serial).
+
+### Spack Environments
+The encouraged method of using Spack is to use environments.
+Rather than installing packages one-at-a-time, you "add" packages to an environment.
+After adding all packages, you concretize and install them all.
+Using environments, one can explicitly add an "optimal" Kokkos for the environment, e.g.
+````
+spack add kokkos +cuda +cuda_lambda +volta70
+````
+All packages within the environment will build against the CUDA-enabled Kokkos,
+even if they only request a default Kokkos.
+
 ## NVCC Wrapper
-Kokkos is a C++ project, but often builds for the CUDA backend. This is particularly problematic with CMake. At this point, `nvcc` does not accept all the flags that normally get passed to a C++ compiler.  Kokkos provides `nvcc_wrapper` that identifies correctly as a C++ compiler to CMake and accepts C++ flags, but uses `nvcc` as the underlying compiler.
+Kokkos is a C++ project, but often builds for the CUDA backend.
+This is particularly problematic with CMake. At this point, `nvcc` does not accept all the flags that normally get passed to a C++ compiler.
+Kokkos provides `nvcc_wrapper` that identifies correctly as a C++ compiler to CMake and accepts C++ flags, but uses `nvcc` as the underlying compiler.
+`nvcc` itself also uses an underlying host compiler, e.g. GCC.
 
-Adding `nvcc_wrapper` as a valid compiler in the Spack toolchain requires a few steps, but is straightforward.
-First, you must install the Spack package using the correct underlying compiler. In this example we use GCC 7.2.
+In Spack, the underlying host compiler is specified as below, e.g.:
 ````
-spack install kokkos-nvcc-wrapper %gcc@7.2.0
+spack install package %gcc@8.0.0
 ````
-After installing, locate the path to the compiler by running:
+This is still valid for Kokkos. To use the special wrapper for CUDA builds, request a desired compiler and simply add the `+wrapper` variant.
 ````
-spack find -p kokkos-nvcc-wrapper %gcc@7.2.0
+spack install kokkos +cuda +wrapper %gcc@7.2.0
 ````
-Spack maintains a list of valid compilers in its `compilers.yaml` file, usually found at `$HOME/.spack`.
-There should already exist an entry in this file for the compiler (e.g. GCC 7.2) you used to build `nvcc_wrapper`.
-Copy this entry and modify slightly, changing the compiler name (e.g. `gcc@7.2.0-kokkos`) and the C++ compiler path:
+Downstream projects depending on Kokkos need to override their compiler.
+Kokkos provides the compiler you need in a `kokkos_cxx` variable, 
+which points to either `nvcc_wrapper` when needed, otherwise the regular compiler.
+Spack projects already do this to use MPI compiler wrappers.
 ````
-- compiler:
-    modules: [gcc/7.2.0]
-    operating_system: rhel7
-    paths:
-      cc: /opt/local/bin/gcc
-      f77: /opt/local/bin/gfortran
-      fc: /opt/local/bin/gfortran
-      cxx: /projects/linux-rhel7-ppc64le/gcc-7.2.0/kokkos-nvcc-wrapper-master-skz642na6cvjxl2hhunauewk6haqyu5u/bin/nvcc_wrapper
-    spec: gcc@7.2.0-kokkos
-    target: ppc64le
+def cmake_args(self):
+  options = []
+  ...
+  options.append("-DCMAKE_CXX_COMPILER=%s" % self.spec["kokkos"].kokkos_cxx)
+  ...
+  return options
 ````
-You can now build Kokkos (and Kokkos-dependent projects) using this compiler with the CUDA backend, e.g.
+Note: `nvcc_wrapper` works with the MPI compiler wrappers.
+If building your project with MPI, do NOT set your compiler to `nvcc_wrapper`.
+Instead set your compiler to `mpicxx` and `nvcc_wrapper` will be used under the hood.
 ````
-spack install kokkos +cuda %gcc@7.2.0-kokkos
+def cmake_args(self):
+  options = []
+  ...
+  options.append("-DCMAKE_CXX_COMPILER=%s" % self.spec["mpi"].mpicxx)
+  ...
+  return options
+````
+To accomplish this, `nvcc_wrapper` must depend on MPI (even though it uses no MPI).
+This has the unfortunate consequence that Kokkos CUDA projects not using MPI will implicitly depend on MPI, anyway. 
+This behavior is necessary for now, but will hopefully be removed later.
+When using environments, if MPI is not needed, you can remove the MPI dependency with:
+````
+spack add kokkos-nvcc-wrapper ~mpi
 ````
 
-## Common Kokkos Examples
-Kokkos backends are Spack variants, specified with the `+` syntax. Most of these variants are listed above in the `spack info` output.  Spack will choose a default compiler, if none is specified using the `%` syntax. For Kokkos, best practice is to always choose a specific compiler for Kokkos.
-````
-spack insall kokkos +cuda +serial kokkos_arch=Volta70 %gcc@7.2.0-kokkos
-````
-The given spec builds the CUDA backend with serial support, using an installed `nvcc_wrapper` as the underlying compiler. In this case, Kokkos should optimize for the Volta 7.0 architecture. Another possibility is
-````
-spack install kokoks +openmp kokkos_arch=HSW %intel@18
-````
-which builds the OpenMP backend, optimized for Haswell using an Intel 18 compiler. 
-
-Spack variants not only specify backends, but can activate certain features. The most common are explicit template instantation (`+eti`) and the Kokkos profiling tools (`+profiling`).
-````
-spack install kokkos +openmp +profiling +eti kokkos_arch=HSW  %intel@18
-````
 
 ## Setting Up Kokkos Tutorials
 Coming soon
@@ -216,42 +221,11 @@ Kokkos Kernels also defines a package that can be installed as, e.g.
 ````
 spack install kokkos-kernels +serial +float
 ````
-Here the main variants of Kokkos Kernels are the backend (e.g. serial, cuda, openmp) or the ETI types to be explicitly instantiated (e.g. float, double, complex_double). Running `spack info kokkos-kernels` gives, e.g.
+The main variants of Kokkos Kernels are the backend (e.g. serial, cuda, openmp), ETI types to be explicitly instantiated (e.g. float, double, complex_double), and third-party libraries (TPLs) used.
 ````
-Description:
-    Kokkos Kernels provides math kernels, often BLAS or LAPACK for small
-    matrices, that can be used in larger Kokkos parallel routines
-
-Variants:
-    Name [Default]                 Allowed values          Description
-
-
-    build_type [RelWithDebInfo]    Debug, Release,         CMake build type
-                                   RelWithDebInfo,
-                                   MinSizeRel
-    complex_double [off]           True, False             ETI complex double precision
-    complex_float [off]            True, False             ETI complex single precision
-    cuda [off]                     True, False             enable Cuda backend
-    double [on]                    True, False             ETI doubles
-    float [off]                    True, False             ETI float
-    openmp [off]                   True, False             enable OpenMP backend
-    serial [on]                    True, False             enable Serial backend
-
-Build Dependencies:
-    cmake  kokkos
-````
-Not that Kokkos is a build dependency for Kokkos-Kernels.
-Spack automatically builds a (or finds an existing) version of Kokkos that meets requirements for Kokkos Kernels.
-A few of the variants (backends like OpenMP) will change how Kokkos is built.
-However, Kokkos Kernels selects a 'default' Kokkos configuration it thinks is best.
-Kokkos Kernels variants therefore change Kokkos in a *coarse-grained* way.
-For *fine-grained* control over the dependent Kokkos, Spack allows directly specifying the exact Kokkos 
-dependency specififcation
-````
-spack install kokkos-kernels +cuda ^kokkos+cuda+uvm+cuda_lambda
-````
-Kokkos Kernels will no longer select a 'default', instead building and linking against the exact Kokkos specified.
-
+Kernels derives much of its configuration from the Kokkos installation itself (see above).
+Thus Kokkos Kernels only has a few variants, in constrast to Kokkos which has dozens of variants.
+For most options, tuning the configuration of Kokkos Kernels really means tuning the underlying Kokkos.
 
 
 ## Use with Testing
@@ -267,6 +241,9 @@ spack install --test=root kokkos-kernels
 ````
 Here `--test=root` says to run tests on the 'root' package (not the dependent packages), which in this case is Kokkos Kernels.
 
+##### [LICENSE](https://github.com/kokkos/kokkos/blob/master/LICENSE)
 
+[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
-
+Under the terms of Contract DE-NA0003525 with NTESS,
+the U.S. Government retains certain rights in this software.
