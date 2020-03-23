@@ -188,6 +188,11 @@ class Kokkos(CMakePackage, CudaPackage):
 
     variant("diy", default=False, description="Add necessary flags for Spack DIY mode")
 
+    variant("std", default="11", values=["11", "14", "17", "20"], multi=False)
+    #nvcc does not currently work with C++17 or C++20
+    conflicts("+cuda", when="+wrapper std=17")
+    conflicts("+cuda", when="+wrapper std=20")
+
     def append_args(self, cmake_prefix, cmake_options, spack_options):
       for opt in cmake_options:
         enableStr = "+%s" % opt
@@ -240,6 +245,9 @@ class Kokkos(CMakePackage, CudaPackage):
         options.append("-DCMAKE_CXX_COMPILER=%s" % self.spec["kokkos-nvcc-wrapper"].kokkos_cxx)
       except Exception as e:
         options.append("-DCMAKE_CXX_COMPILER=%s" % spack_cxx)
+
+      # Set the C++ standard to use
+      options.append("-DKokkos_CXX_STANDARD=%s" % self.spec.variants["std"].value)
 
       return options
 
