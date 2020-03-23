@@ -186,8 +186,6 @@ class Kokkos(CMakePackage, CudaPackage):
     depends_on("kokkos-nvcc-wrapper", when="+wrapper")
     conflicts("+wrapper", when="~cuda")
 
-    variant("diy", default=False, description="Add necessary flags for Spack DIY mode")
-
     variant("std", default="11", values=["11", "14", "17", "20"], multi=False)
     #nvcc does not currently work with C++17 or C++20
     conflicts("+cuda", when="+wrapper std=17")

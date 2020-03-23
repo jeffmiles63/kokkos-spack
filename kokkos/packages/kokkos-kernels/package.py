@@ -18,8 +18,6 @@ class KokkosKernels(CMakePackage,CudaPackage):
     version('develop', branch='develop')
     version('master',  branch='master')
 
-    variant("diy", default=False, description="Add necessary flags for Spack DIY mode")
-
     depends_on("kokkos")
     depends_on("kokkos@develop", when="@develop")
 
