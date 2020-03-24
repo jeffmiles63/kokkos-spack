@@ -66,9 +66,11 @@ class KokkosKernels(CMakePackage,CudaPackage):
       "cblas"        : (False, "cblas",      "CBLAS",       "Link to CBLAS library"),
       "lapacke"      : (False, "clapack",    "LAPACKE",     "Link to LAPACKE library"),
     }
+
     for tpl in tpls:
       deflt, spackName, rootName, descr = tpls[tpl]
       variant(tpl, default=deflt, description=descr)
+      depends_on(spackName, when="+%s" % tpl)
 
     def cmake_args(self):
       spec = self.spec
