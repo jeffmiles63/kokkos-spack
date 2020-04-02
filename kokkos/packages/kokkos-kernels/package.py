@@ -32,28 +32,31 @@ class KokkosKernels(CMakePackage,CudaPackage):
       variant(backend.lower(), default=deflt, description=descr)
       depends_on("kokkos+%s" % backend.lower(), when="+%s" % backend.lower())
 
-    etis = {
-      "double"                : (True,   "ETI doubles"),
-      "float"                 : (False,  "ETI float"),
-      "complex_double"        : (False,  "ETI complex double precision"),
-      "complex_float"         : (False,  "ETI complex single precision"),
+    space_etis = {
       "execspace_cuda"        : ('auto', ""),
-      "memspace_cudauvmspace" : ('auto', ""),
-      "memspace_cudaspace"    : ('auto', ""),
-      "memspace_hostspace"    : (True,   ""),
       "execspace_openmp"      : ('auto', ""),
       "execspace_threads"     : ('auto', ""),
       "execspace_serial"      : ('auto', ""),
-      "layoutleft"            : (True,   ""),
-      "layoutright"           : (False,  ""),
-      "ordinal_int"           : (True,   ""),
-      "ordinal_int64_t"       : (False,  ""),
-      "offset_int"            : (True,   ""),
-      "offset_size_t"         : (True,   ""),
+      "memspace_cudauvmspace" : ('auto', ""),
+      "memspace_cudaspace"    : ('auto', ""),
     }
-    for eti in etis:
-      deflt, descr = etis[eti]
+    for eti in space_etis:
+      deflt, descr = space_etis[eti]
       variant(eti, default=deflt, description=descr)
+
+    numeric_etis = {
+      "ordinals" : ("int",        "ORDINAL_", #default, cmake name
+                    ["int", "int64_t"]),      #allowed values
+      "offsets"  : ("int,size_t", "OFFSET_",
+                    ["int", "size_t"]),
+      "layouts"  : ("left",       "LAYOUT",
+                    ["left", "right"]),
+      "scalars"  : ("double",     "",
+                    ["float", "double", "complex_float", "complex_double"])
+    }
+    for eti in numeric_etis:
+      deflt, cmake_name, vals = numeric_etis[eti]
+      variant(eti, default=deflt, values=vals, multi=True)
 
     tpls = {
       #variant name   #deflt   #spack name   #root var name #docstring
@@ -99,9 +102,19 @@ class KokkosKernels(CMakePackage,CudaPackage):
             pass #this should get picked up automatically, we hope
         elif offFlag in self.spec:
           options.append("-DKokkosKernels_ENABLE_TPL_%s=OFF" % tpl.upper())
+
+      for eti in self.numeric_etis:
+        deflt, cmake_name, vals = self.numeric_etis[eti]
+        for val in vals:
+          keyval = "%s=%s" % (eti, val)
+          cmake_option = "KokkosKernels_INST_%s%s" % (cmake_name.upper(), val.upper())
+          if keyval in spec:
+            options.append("-D%s=ON" % cmake_option)
+          else:
+            options.append("-D%s=OFF" % cmake_option)
         
-      for eti in self.etis:
-        deflt, descr = self.etis[eti]
+      for eti in self.space_etis:
+        deflt, descr = self.space_etis[eti]
         if deflt == "auto":
           value = spec.variants[eti].value
           if str(value) == "True": #spack does these as strings, not reg booleans
