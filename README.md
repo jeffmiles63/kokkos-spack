@@ -276,7 +276,7 @@ When done with Spack, you can then restore your original environment:
 ### Setting Up Kokkos Tutorials
 If wishing to use Spack with Kokkos Tutorials, just follow the development workflow:
 ````
-> spack dev-build -u cmake -d <tutorial-src> kokkos-tutorial@develop
+> spack dev-build -u cmake -d <tutorial-src> kokkos-tutorials@develop
 ````
 This creates a development environment for your tutorial that you can use while writing and testing your exercises.
 

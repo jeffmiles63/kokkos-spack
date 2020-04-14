@@ -5,22 +5,20 @@
 
 from spack import *
 
-
-class KokkosTutorial(CMakePackage,CudaPackage):
+class KokkosTutorials(CMakePackage,CudaPackage):
     """Kokkos implements a programming model in C++ for writing performance
     portable applications targeting all major HPC platforms."""
 
-    homepage = "https://github.com/kokkos/kokkos"
-    git      = "https://github.com/kokkos/kokkos.git"
+    homepage = "https://github.com/kokkos/kokkos-tutorials"
+    git      = "https://github.com/kokkos/kokkos-tutorials.git"
 
     version("master",  branch="master", preferred=True)
-    version("develop", branch="develop")
 
     depends_on("kokkos")
 
     def cmake_args(self):
       spec = self.spec
       options = []
-      options.append("-DKokkos_ROOT=%s" % spec["kokkos"].prefix)
+      options.append("-DKokkos_ROOT=%s/lib64/cmake/Kokkos/" % spec["kokkos"].prefix)
       return options
 
