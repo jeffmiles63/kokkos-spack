@@ -15,6 +15,10 @@ class KokkosTutorials(CMakePackage,CudaPackage):
     version("master",  branch="master", preferred=True)
 
     depends_on("kokkos")
+    depends_on("kokkos+cuda", when="+cuda")
+    depends_on("kokkos+cuda_uvm", when="+cuda_uvm")
+    depends_on("kokkos+cuda_lambda", when="+cuda_lambda")
+    depends_on("kokkos+openmp", when="+openmp")
 
     def cmake_args(self):
       spec = self.spec
